@@ -1,0 +1,3 @@
+model,dataset,cefr,l1,n,ppl_mean,ppl_median,ppl_std
+B0,CELVA-SP-2sample,A2,French,1,177.18774101129338,177.18774101129338,0.0
+B0,CELVA-SP-2sample,B1,French,1,47.16403985989774,47.16403985989774,0.0

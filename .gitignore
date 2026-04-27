@@ -21,9 +21,10 @@ dist/
 venv/
 
 # Run / cache outputs
-runs/
 data-cache/
 data/
+# runs/ committed (small predictions.jsonl + CSV tables); large model
+# weights excluded by *.pt / *.bin / *.safetensors below.
 codebase/sample-benchmark-*/
 codebase/runs/
 codebase/data-cache/

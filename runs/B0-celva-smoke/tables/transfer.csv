@@ -1,0 +1,2 @@
+model,dataset,n,ppl_mean,ppl_std
+B0,CELVA-SP-2sample,2,112.17589043559556,91.94064079912496
