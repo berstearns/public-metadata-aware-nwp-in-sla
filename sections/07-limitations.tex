@@ -1,0 +1,80 @@
+\section*{Limitations}
+\label{sec:limitations}
+
+\paragraph{EFCAMDAT CEFR labels are curriculum-derived.}
+The CEFR labels in EFCAMDAT reflect the level at which a text was
+written within the EF curriculum, not an independent assessment of the
+text itself. This adds noise to the CEFR axis of our gate and limits
+the sharpness of claims about proficiency-specific effects. We mitigate
+by stratifying along the coarser A1 / A2 / B1 / B2 / C1 buckets that
+EFCAMDAT actually exposes (C2 is absent from the test split).
+
+\paragraph{Single base model, single scale.}
+The flagship draft uses GPT-2 Base (117M) only. Qwen's evidence for
+$G_1$ dominance holds at 1.7B dense and 15B MoE; whether our extension
+to metadata-conditioned gating preserves the gain at GPT-2 Base scale
+is the first thing to verify. If it does, a scale sweep (Pythia 160M /
+410M, then GPT-2 Medium / Large) becomes the obvious follow-up. We
+flag this explicitly rather than over-claim.
+
+\paragraph{Only CEFR and L1 as metadata.}
+We deliberately restrict the gate input to CEFR proficiency and L1 ---
+the two fields available uniformly across all four corpora we use. This
+keeps the cross-corpus evaluation clean but leaves out signals that SLA
+research treats as informative: L1 typological features
+(articles, pro-drop, word order), age of onset, exposure years, and
+task conditions. Variant v07 in \texttt{experiments-ideas/} drops in
+WALS/Grambank features in place of the L1 ID and is the natural next
+step after the flagship.
+
+\paragraph{Missing-metadata behaviour is under-specified.}
+At test time, a corpus with no CEFR or L1 labels routes the embedding
+to \texttt{unk}, collapsing the gate to a corpus-average. We do not
+yet know whether this gracefully degrades to the ungated baseline or
+whether the \texttt{unk} slot ends up with a strange learned
+distribution that actively hurts inference. This is an empirical
+question the flagship run will answer.
+
+\paragraph{The C4200M synthetic-data extension is deferred.}
+\texttt{v10-efcamdat-plus-c4200m.md} in the variant catalogue describes
+a potentially useful augmentation --- mixing EFCAMDAT with synthetic
+corruptions of web text --- but we keep it out of the flagship to stay
+focused on the authentic-data story. If zero-shot transfer to
+KUPA-KEYS is poor, the C4200M extension becomes a priority.
+
+\section*{Future Work}
+\label{sec:future-work}
+
+\paragraph{Error-distribution alignment via GEC + ERRANT.}
+The CMCL companion establishes that a data-only learner GPT-2 produces
+an error profile \emph{selectively shifted} toward SLA-vulnerable
+categories (verbal morphology, SVA, determiners), measured by tagging
+automatic corrections with ERRANT
+\citep{bryant2019errant}. The natural follow-up to the present
+paper is to apply the same pipeline --- generate, correct (e.g.\ with
+CoEdIT \citep{raheja2023coedit}), tag with ERRANT, compute
+Jensen--Shannon divergence against authentic EFCAMDAT error histograms
+--- to our metadata-conditioned gated model. The expected finding is
+that G1's per-(CEFR, L1) histogram is closer to the authentic
+per-(CEFR, L1) histogram than B1's is to the EFCAMDAT-average
+histogram, demonstrating that the gate provides not just lower
+perplexity but finer-grained control over the error mix. We keep this
+out of the flagship pilot because it adds a heavy pipeline dependency
+(CoEdIT model weights, ERRANT parsing), doubles the eval cost, and
+ERRANT covers only morphosyntactic errors --- making it a well-scoped
+standalone follow-up rather than a core contribution.
+
+\paragraph{Typological-feature gating for unseen L1s.}
+Variant v07 replaces the L1 learned embedding with a fixed WALS /
+Grambank typological vector, enabling zero-shot inference on
+out-of-inventory L1s. This is the critical test for broad applicability
+across languages not represented in EFCAMDAT's ten-L1 training set;
+partial KUPA-KEYS transfer (which has Polish, Greek, Hungarian, Dutch,
+Bengali, and Slovene among its L1s) is the main motivation for
+prioritising it after the flagship result is established.
+
+\paragraph{Scaling the gate with the backbone.}
+Qwen's evidence for the SDPA-output gate holds at 1.7B--15B. Once the
+GPT-2 Base flagship is validated, the obvious progression is Pythia-160M
+/ 410M / 1.4B, testing whether metadata-conditioned gating composes
+cleanly with increasing backbone capacity.

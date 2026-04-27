@@ -1,0 +1,26 @@
+\section*{Ethics Statement}
+\label{sec:ethics}
+
+This work uses the EFCAMDAT learner corpus under its published research
+licence \citep{geertzen2014efcamdat}, and the CEFR-classification
+derivative splits used for transfer evaluation have been prepared as
+part of the first author's PhD research programme.
+
+Learner data is sensitive: misuse of proficiency- or L1-conditioned
+generation could reinforce stereotypes about how speakers of particular
+L1s ``should'' write in English, or produce mock-learner text that
+misrepresents authentic learners. We intend the gated model as a
+research instrument for cognitive-modelling and diagnostic
+applications (intelligent tutoring, proficiency-calibrated material
+generation), not as a public-facing generator. Any downstream
+deployment would need (i) explicit consent from the learner whose
+metadata is used, (ii) guardrails that prevent the generation of
+artificial learner output from being passed off as human learner data
+in corpus work, and (iii) a fallback path for learners whose metadata
+is incomplete or whose L1 is not represented in the training inventory.
+
+We note also that continual pre-training on EFCAMDAT does not anonymise
+the corpus further than its released form already does. Members of
+research teams with access to the underlying identifiers should not
+use the trained model in ways that could re-identify individual
+learners.

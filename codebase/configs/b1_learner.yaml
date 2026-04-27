@@ -1,0 +1,33 @@
+# Baseline B1 — GPT-2 continually pre-trained on EFCAMDAT, no metadata.
+# Matches the CMCL companion's "learner GPT-2".
+
+run_name: b1_learner
+model_variant: b1_learner      # dispatches to the right model class
+
+base_model: gpt2               # HF model id
+max_seq_len: 1024
+batch_size: 8
+grad_accum_steps: 2
+learning_rate: 5.0e-5
+lr_schedule: cosine
+warmup_steps: 200
+num_epochs: 3
+weight_decay: 0.01
+gradient_clip: 1.0
+
+# Reproducibility
+seed: 42
+deterministic: true
+
+# Logging
+log_every: 50
+save_every: 1000
+eval_every: 1000
+
+# Data
+train_split: efcamdat_train_plus_remainder
+eval_split: efcamdat_test
+
+# Metadata is not used by B1 but the data loader still parses it
+# so the same collator can serve every variant.
+use_metadata: false

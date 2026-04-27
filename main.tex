@@ -1,0 +1,35 @@
+\documentclass[11pt]{article}
+
+% Change "review" to "final" for camera-ready version.
+\usepackage[review]{acl}
+
+\input{config/packages}
+\input{config/commands}
+\input{metadata/title}
+\input{metadata/authors}
+
+\begin{document}
+
+% Fix line numbers overlapping text in two-column mode
+\setlength{\linenumbersep}{0.05cm}
+
+\maketitle
+
+% All AI-generated text is coloured red until the author replaces it.
+\color{red}
+
+\input{metadata/abstract}
+
+\input{sections/01-introduction}
+\input{sections/02-related-work}
+\input{sections/03-method}
+\input{sections/04-experiments}
+\input{sections/05-results}
+\input{sections/06-discussion}
+\input{sections/07-limitations}
+\input{sections/08-ethics}
+\input{sections/09-acknowledgments}
+
+\bibliography{bibs/gated-attention,bibs/metadata-infusion,bibs/learner-corpora,bibs/sla-modeling,bibs/language-models}
+
+\end{document}

@@ -1,0 +1,87 @@
+\section{Introduction}
+\label{sec:introduction}
+
+A productive line of cognitive-modelling work asks whether neural
+language models (LMs) capture aspects of human language processing: they
+predict reading times through surprisal
+\citep{levy2008expectation,wilcox2020predictive}, they match syntactic
+acceptability patterns \citep{warstadt2020blimp}, and their activations
+align with neural recordings \citep{schrimpf2021neural}. An adjacent
+question --- whether LMs can model \emph{language acquisition} rather
+than steady-state competence --- is only recently being taken up in
+earnest \citep{stearns2026artificial}. Companion work shows that a
+GPT-2 continually trained on EFCAMDAT learner text produces errors
+concentrated in precisely the categories that second-language acquisition
+(SLA) research identifies as developmentally vulnerable: verbal
+morphology, subject--verb agreement, determiners, and subject pronoun
+omission \citep{stearns2026artificial,geertzen2014efcamdat,
+goldschneider2001explaining}. The error profile of the ``artificial
+learner'' is not uniformly degraded; it is \emph{selectively shifted}
+toward the interlanguage attractors predicted by SLA theory.
+
+That result establishes the hypothesis but not the mechanism of control.
+The learner GPT-2 is a single model with a fixed, implicit learner
+profile shaped by whatever distribution of L1s and proficiencies happens
+to dominate EFCAMDAT. At inference, there is no handle that asks it to
+predict \emph{as an A2 Spanish-L1 learner} rather than as the corpus
+average. Yet for any downstream use of this line of modelling ---
+next-word prediction in intelligent tutoring systems, cloze-based
+proficiency assessment, generation of calibrated practice material,
+diagnostic perplexity mapping \citep{stearns2025nwpaleval} --- the
+learner profile is exactly the variable that should be exposed.
+
+We ask: can we add a small architectural knob that (i) conditions
+next-word prediction on explicit learner metadata (CEFR proficiency, L1)
+and (ii) does so at the mechanism that has the strongest empirical
+evidence of being the useful modulation point in softmax attention?
+
+Recent work by the Qwen team \citep{qiu2025gated} systematically
+evaluates thirty variants of gating in softmax attention and identifies
+a single modification that consistently improves perplexity, downstream
+accuracy, training stability, and long-context extrapolation: a
+head-specific, elementwise, sigmoid gate applied to the output of the
+scaled dot-product attention (SDPA). The gate takes the pre-normalised
+hidden state as input and produces a per-dimension filter on the attention
+output. Qiu et al.~attribute the gain to two effects: the gate introduces
+non-linearity between two otherwise-linear projections, and its
+input-dependent sparsity reduces the \emph{attention-sink} phenomenon
+\citep{xiao2023efficient}.
+
+Our proposal is a minimal change to this mechanism: extend the gate's
+input from the hidden state alone, $X$, to $[X\,;\,e_\text{CEFR}\,;\,e_\text{L1}]$,
+the concatenation of the hidden state with learned CEFR and L1
+embeddings, broadcast across the sequence. The gating filter thereby
+becomes metadata-dependent at every attention layer, while the rest of
+the model --- embeddings, feed-forward blocks, layer norms, output head
+--- is unchanged. Section~\ref{sec:method} formalises the modification.
+
+\paragraph{Contributions.}
+\begin{enumerate}
+  \item A metadata-aware extension of Qwen-style SDPA-output gating
+    suited to L2 learner NWP and cloze (Section~\ref{sec:method}).
+  \item A pilot experimental design on EFCAMDAT with zero-shot transfer
+    to three external L2 corpora --- andrew100k (multi-L1, overlaps
+    with EFCAMDAT), CELVA-SP (predominantly French-L1), and KUPA-KEYS
+    (mixed-L1, several L1s out of EFCAMDAT's inventory) --- structured to isolate the gating
+    contribution from data-only continual pre-training and from naive
+    metadata concatenation (Section~\ref{sec:experiments}).
+  \item A catalogue of nine complementary experiment variants
+    (\texttt{experiments-ideas/v01--v09}) ablating the gate site
+    ($G_1$ vs $G_2$), granularity (elementwise vs headwise), mode
+    (multiplicative vs additive), metadata encoding (CEFR, L1, joint,
+    typological), task (NWP vs cloze), and training regime (full vs
+    frozen backbone).
+\end{enumerate}
+
+The claim we will argue is not that metadata-aware gating is a new
+paradigm. It is the narrower one: the Qwen team's empirical finding ---
+that the single most useful place to gate in softmax attention is at the
+SDPA output --- happens to also be the place where learner-metadata
+conditioning extracts the most leverage, because L2 effects are
+fundamentally about \emph{which contextual information survives}
+softmax-weighted aggregation. This conjecture has a testable prediction:
+gate at $G_1$ beats the same gate at the value layer $G_2$, which in
+turn beats gating at query or key projections --- the ordering Qwen
+reports on native LM benchmarks should reproduce on learner NWP, and
+the margin should be larger because L2 NWP places more demand on
+attention filtering than native NWP.

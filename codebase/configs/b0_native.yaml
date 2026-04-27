@@ -1,0 +1,22 @@
+# Baseline B0 — stock GPT-2, no training, no metadata.
+#
+# This config doesn't drive a training loop. It's consumed by
+# scripts/03_prepare_b0_checkpoint.py, which snapshots the OpenAI GPT-2
+# release into runs/b0_native/last/ so that the existing eval scripts
+# (20_/21_/22_/23_) work on it uniformly with the trained baselines.
+
+run_name: b0_native
+model_variant: b0_native
+
+base_model: gpt2
+max_seq_len: 1024
+batch_size: 8
+
+seed: 42
+deterministic: true
+
+use_metadata: false
+metadata_mode: none
+
+# Present only to satisfy the ExperimentConfig schema; the gate is never
+# instantiated for B0.

@@ -1,0 +1,20 @@
+# Local data paths. Copy this file to codebase/configs/paths.yaml and
+# adjust to your layout. Loaded by src/gated_nwp/config.py via
+# resolve_paths().
+
+data_root: /absolute/path/to/cefr-classification/data/splits
+
+efcamdat:
+  train: norm-EFCAMDAT-train.csv
+  remainder: norm-EFCAMDAT-remainder.csv
+  test: norm-EFCAMDAT-test.csv
+
+transfer:
+  andrew100k:
+    remainder: norm-andrew100k-remainder.csv
+    test_label: norm-andrew100k-test-label.csv
+  celva_sp: norm-CELVA-SP.csv
+  kupa_keys: norm-KUPA-KEYS.csv
+
+cache_root: ./data-cache
+runs_root: ./runs

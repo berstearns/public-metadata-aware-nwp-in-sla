@@ -1,0 +1,22 @@
+# Local data paths. Adjust if your layout differs.
+# Loaded by src/gated_nwp/config.py via resolve_paths().
+
+data_root: ./data/splits
+
+efcamdat:
+  train: norm-EFCAMDAT-train.csv
+  remainder: norm-EFCAMDAT-remainder.csv
+  test: norm-EFCAMDAT-test.csv
+
+transfer:
+  andrew100k:
+    remainder: norm-andrew100k-remainder.csv
+    test_label: norm-andrew100k-test-label.csv
+  celva_sp: norm-CELVA-SP.csv
+  kupa_keys: norm-KUPA-KEYS.csv
+
+# Where to cache tokenised / preprocessed artefacts
+cache_root: ./data-cache
+
+# Where training outputs go
+runs_root: ./runs

@@ -1,0 +1,52 @@
+# Flagship (v01) — metadata-aware SDPA-output gated attention.
+#
+# Y' = Y ⊙ σ([X; e_CEFR; e_L1] W_θ)
+#
+# Head-specific, elementwise, sigmoid, multiplicative, init to pass-through.
+
+run_name: g1_gated
+model_variant: g1_metadata_gated
+
+base_model: gpt2
+max_seq_len: 1024
+batch_size: 8
+grad_accum_steps: 2
+learning_rate: 5.0e-5
+lr_schedule: cosine
+warmup_steps: 200
+num_epochs: 3
+weight_decay: 0.01
+gradient_clip: 1.0
+
+seed: 42
+deterministic: true
+
+log_every: 50
+save_every: 1000
+eval_every: 1000
+
+train_split: efcamdat_train_plus_remainder
+eval_split: efcamdat_test
+
+use_metadata: true
+metadata_mode: gate_input
+
+# Gate hyperparameters
+gate:
+  site: g1                     # g1 | g2 | g3 | g4 | g5
+  granularity: elementwise     # elementwise | headwise
+  head_sharing: specific       # specific | shared
+  activation: sigmoid          # sigmoid | silu
+  form: multiplicative         # multiplicative | additive
+  init: passthrough            # passthrough | zero
+  d_cefr: 16
+  d_l1: 32
+  # CEFR inventory — EFCAMDAT test set contains A1–C1 (no C2); we keep
+  # a C2 slot for future corpora + `unk` for transfer rows lacking
+  # labels.
+  cefr_classes: [A1, A2, B1, B2, C1, C2, unk]
+  # L1 inventory — the 10 L1s present in EFCAMDAT + `unk`. Transfer
+  # corpora with L1s outside this inventory (e.g. KUPA-KEYS has
+  # Polish, Greek, Hungarian, Dutch, Bengali) route to `unk`.
+  l1_classes: [Arabic, French, German, Italian, Japanese, Mandarin,
+               Portuguese, Russian, Spanish, Turkish, unk]

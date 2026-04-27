@@ -1,0 +1,91 @@
+\section{Results (Preliminary / Forthcoming)}
+\label{sec:results}
+
+\note{This section presents the planned result schema. Cells are filled
+with placeholder values until the flagship run completes. The structure
+--- which comparisons, which stratifications, which tests --- is fixed
+ahead of time to avoid post-hoc selection.}
+
+\subsection{In-domain perplexity}
+\label{subsec:indomain-ppl}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+Model          & A1 & A2 & B1 & B2 & C1 \\
+\midrule
+B0 native GPT-2 & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} \\
+B1 learner GPT-2 & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} \\
+B2 + metadata concat & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} \\
+G1 ours         & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} \\
+\bottomrule
+\end{tabular}
+\caption{Perplexity on EFCAMDAT held-out, stratified by CEFR. The EFCAMDAT
+test set contains A1--C1 only.
+\textbf{Preliminary}: values pending the flagship run.}
+\label{tab:ppl-cefr}
+\end{table}
+
+The predicted pattern: G1 should improve most on A1--A2 rows, where
+baseline uncertainty is highest and metadata carries the most signal;
+the gap should narrow on C1 rows where the native baseline is already
+well-calibrated. B2 is expected to sit between B1 and G1.
+
+\subsection{Cloze accuracy}
+\label{subsec:cloze-results}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+Model & Top-1 & Top-5 \\
+\midrule
+B0 & \textsc{tbd} & \textsc{tbd} \\
+B1 & \textsc{tbd} & \textsc{tbd} \\
+B2 & \textsc{tbd} & \textsc{tbd} \\
+G1 & \textsc{tbd} & \textsc{tbd} \\
+\bottomrule
+\end{tabular}
+\caption{Content-word cloze accuracy on held-out EFCAMDAT.
+\textbf{Preliminary}: values pending the flagship run.}
+\label{tab:cloze}
+\end{table}
+
+We predict that the gate helps cloze more than free-running NWP because
+bidirectional context lets the metadata-conditioned filter exploit
+proficiency signal more effectively: the A1 learner's distribution of
+plausible completions for a masked determiner is narrower than the C1
+learner's, and the gate can reshape the model's output distribution to
+match.
+
+\subsection{Zero-shot transfer}
+\label{subsec:transfer}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+Model & andrew100k & CELVA-SP & KUPA-KEYS \\
+\midrule
+B0 & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} \\
+B1 & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} \\
+B2 & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} \\
+G1 & \textsc{tbd} & \textsc{tbd} & \textsc{tbd} \\
+\bottomrule
+\end{tabular}
+\caption{Zero-shot PPL on external corpora.
+\textbf{Preliminary}: values pending the flagship run.}
+\label{tab:transfer}
+\end{table}
+
+We expect the G1 gain to hold on andrew100k (same-target, different
+register, fully-overlapping L1 inventory), hold on CELVA-SP (French is
+in EFCAMDAT's inventory, so the gate's L1 embedding is usable), and
+weaken on KUPA-KEYS (several L1s --- Polish, Greek, Hungarian, Dutch,
+Bengali, Slovene --- are out of inventory and route to \texttt{unk}).
+If the KUPA-KEYS gap is large, v07 (typological-feature gating)
+becomes the path forward.

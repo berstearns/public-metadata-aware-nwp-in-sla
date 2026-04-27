@@ -1,0 +1,25 @@
+# Shared eval config for the three transfer corpora.
+
+corpora:
+  - name: andrew100k
+    path_key: transfer.andrew100k.remainder
+    has_cefr: true
+    has_l1: true
+  - name: celva_sp
+    path_key: transfer.celva_sp
+    has_cefr: true
+    has_l1: true                           # French-L1 (majority)
+  - name: kupa_keys
+    path_key: transfer.kupa_keys
+    has_cefr: true
+    has_l1: true                           # mixed-L1; many are out of EFCAMDAT inventory
+
+batch_size: 16
+max_seq_len: 1024
+seed: 42
+
+# Cloze settings
+cloze:
+  mask_pos: [NOUN, VERB, ADJ, DET]
+  num_masks_per_sentence: 1
+  topk: [1, 5]

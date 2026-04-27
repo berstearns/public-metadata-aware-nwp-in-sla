@@ -1,0 +1,31 @@
+# Baseline B2 — GPT-2 continually pre-trained on EFCAMDAT with CEFR + L1
+# prepended as control tokens in the text stream. The "prompt-level
+# metadata" baseline.
+
+run_name: b2_metadata_concat
+model_variant: b2_metadata_concat
+
+base_model: gpt2
+max_seq_len: 1024
+batch_size: 8
+grad_accum_steps: 2
+learning_rate: 5.0e-5
+lr_schedule: cosine
+warmup_steps: 200
+num_epochs: 3
+weight_decay: 0.01
+gradient_clip: 1.0
+
+seed: 42
+deterministic: true
+
+log_every: 50
+save_every: 1000
+eval_every: 1000
+
+train_split: efcamdat_train_plus_remainder
+eval_split: efcamdat_test
+
+use_metadata: true
+metadata_mode: prefix_tokens    # prepend "<cefr=A2><l1=Spanish>" to each sequence
+metadata_prefix_template: "<cefr={cefr}><l1={l1}>"

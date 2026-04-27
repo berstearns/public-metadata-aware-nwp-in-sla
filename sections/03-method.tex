@@ -1,0 +1,87 @@
+\section{Method}
+\label{sec:method}
+
+\subsection{Preliminary: Qwen-style SDPA-output gating}
+\label{subsec:qwen-gate}
+
+A standard attention block produces queries, keys, values
+$Q,K,V = XW_Q, XW_K, XW_V$ and computes the scaled dot-product
+attention output
+\begin{equation}
+  \text{Attn}(Q,K,V) = \text{softmax}\!\left(\tfrac{QK^\top}{\sqrt{d_k}}\right) V.
+  \label{eq:sdpa}
+\end{equation}
+After concatenation over heads, the result is linearly projected by
+$W_O$ to give the block output. \citet{qiu2025gated} insert a gate
+\emph{between} the SDPA output and $W_O$:
+\begin{equation}
+  Y' = Y \odot \sigma(X W_\theta),
+  \label{eq:qwen-gate}
+\end{equation}
+where $Y$ is the concatenated multi-head SDPA output, $X$ is the
+pre-normalised hidden state, $\sigma$ is the element-wise sigmoid, and
+$W_\theta \in \mathbb{R}^{d_\text{model} \times (q \cdot d_k)}$
+parameterises the gate. The gate is \emph{head-specific} (different
+gating vector per head), \emph{elementwise} (per-dimension inside each
+head), and \emph{multiplicative}. Qiu et al.~sweep the gate through
+five candidate positions ($G_1$ at the SDPA output, $G_2$ at the value
+projection, $G_3$ at the key, $G_4$ at the query, $G_5$ at the dense
+output) and find $G_1$ dominant on every benchmark tested: PPL,
+HellaSwag, MMLU, GSM8k, C-eval.
+
+\subsection{Metadata-aware gate}
+\label{subsec:metadata-gate}
+
+Our modification of \eqref{eq:qwen-gate} is to extend the gate's input
+with learner-metadata embeddings, broadcast across the sequence:
+\begin{equation}
+  Y' = Y \odot \sigma\!\bigl(\,[\,X \,;\, e_\text{CEFR}\,;\, e_\text{L1}\,]\, W_\theta\,\bigr),
+  \label{eq:metadata-gate}
+\end{equation}
+with
+\begin{itemize}
+  \item $e_\text{CEFR} \in \mathbb{R}^{d_c}$ a learned embedding over
+    $\{A1, A2, B1, B2, C1, C2, \texttt{unk}\}$, $d_c = 16$,
+  \item $e_\text{L1} \in \mathbb{R}^{d_l}$ a learned embedding over the
+    EFCAMDAT L1 inventory augmented with an \texttt{unk} slot,
+    $d_l = 32$,
+  \item both embeddings tiled across sequence length $n$ before
+    concatenation along the feature axis with $X$.
+\end{itemize}
+The gate parameter tensor grows to
+$W_\theta \in \mathbb{R}^{(d_\text{model} + d_c + d_l) \times (q \cdot d_k)}$.
+For GPT-2 Base ($d_\text{model}{=}768$, $q{=}12$, $d_k{=}64$) this adds
+roughly $(48) \times (768) \approx 37\text{k}$ parameters per layer of
+gate, i.e.~0.4M over twelve layers, on top of the 2M added by a vanilla
+Qwen-style gate. Total overhead remains under 2\% of GPT-2 Base's 117M
+parameters.
+
+\paragraph{Initialisation.}
+Following \citet{qiu2025gated} we zero-initialise $W_\theta$ so that
+$\sigma(\cdot) = 0.5$ at step 0; for stability we actually initialise
+the final linear layer with zeros and the bias with a large positive
+constant so that $\sigma(\cdot) \approx 1$ at step 0, making the gated
+model equivalent to the ungated base model before any gradient updates.
+This is important for continual pre-training: the learner-tuned loss
+should not regress the base model in the first few steps.
+
+\paragraph{Missing-metadata inference.}
+At eval time on corpora without CEFR or L1 labels (or with
+out-of-inventory L1), the corresponding embedding is routed to the
+\texttt{unk} slot. This is a deliberate design choice: it lets the
+model be deployed on texts whose metadata is absent, at the cost of
+reducing the gate to a learned average over the training distribution.
+For genuine zero-shot transfer to unseen L1s we recommend instead v07
+(typological features, Section~\ref{sec:experiments}).
+
+\paragraph{Why $G_1$?}
+Qwen's explanation for why $G_1$ dominates $G_2$--$G_5$ is that the
+gate interposes a non-linearity between the two otherwise-linear
+projections $W_V$ and $W_O$ (Eqs. 7--8 of their paper). For L2 NWP this
+matters mechanistically: the non-linearity is what lets the metadata
+signal re-weight the value-aggregated context \emph{before} it is mapped
+back into the residual stream, i.e.~at the last point where contextual
+information is still disentangled per head. Gating earlier (at $Q$, $K$,
+or $V$) modulates how information is \emph{gathered}; gating at $G_1$
+modulates what is \emph{retained}, which is the operation a
+proficiency-aware learner model plausibly needs.

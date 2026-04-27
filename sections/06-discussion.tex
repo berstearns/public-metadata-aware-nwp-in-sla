@@ -1,0 +1,63 @@
+\section{Discussion}
+\label{sec:discussion}
+
+\paragraph{Why Qwen's best gate is also the learner-NWP gate.}
+\citet{qiu2025gated} attribute the dominance of $G_1$ over $G_2$--$G_5$
+to (i) non-linearity between the value and output projections and (ii)
+input-dependent sparsity that mitigates the attention sink. Both
+properties have a clean interpretation in the L2-NWP setting: a
+proficiency-aware gate needs to selectively suppress or amplify the
+pieces of context a learner \emph{actually uses} when predicting the
+next word. An A1 Spanish-L1 learner writing in English uses the
+immediate left context heavily and the distal discourse context
+barely; a C2 learner integrates more globally. The gate at $G_1$ is
+the place in the attention block where that filtering has the most
+direct effect, because it operates on the softmax-weighted value
+aggregate --- the attention output --- and not on the pre-aggregation
+$Q/K/V$ projections. In other words, we expect the ordering
+$G_1 > G_2 > \{G_3, G_4\} > G_5$ to reproduce on learner NWP, with a
+wider margin than on native LM benchmarks because the operation is
+more load-bearing here.
+
+\paragraph{Relation to the CMCL companion finding.}
+The companion paper showed that a data-only learner GPT-2 produces a
+\emph{selectively-shifted} error profile --- not uniformly more errors,
+but systematically more errors in the SLA-predicted vulnerable
+categories \citep{stearns2026artificial}. Our proposal is the
+architectural next step: if data-only continual pre-training bends the
+error profile in the right direction for the EFCAMDAT average, an
+architectural gate with metadata input should bend it per learner
+profile. The CMCL result is the existence proof for the data-only
+version of this claim; this paper is the control knob. Quantitative
+validation via the ERRANT-based error-histogram pipeline is a
+well-scoped follow-up (see Future Work); in the present pilot the
+two metrics --- stratified PPL and cloze accuracy --- already
+constrain the hypothesis meaningfully.
+
+\paragraph{The perplexity-as-diagnostic connection.}
+\citet{stearns2025nwpaleval} argues for treating perplexity not as an
+end-to-end metric but as a diagnostic that identifies linguistic
+constructions a learner finds uncertain. Our gate is the
+minimum-intervention operationalisation: the gating scores themselves
+are a layer-by-layer, head-by-head record of which contextual
+information the model allows to flow through when conditioned on a
+given learner profile. Inspecting those scores on a fixed input while
+varying the metadata (A1 Spanish vs C1 Japanese) provides a principled
+way of extracting \emph{what distinguishes these learners' expectations}
+directly from the model's internal mechanisms, rather than from
+downstream behavioural probes.
+
+\paragraph{What the variant catalogue is for.}
+The nine variants in \texttt{experiments-ideas/} are not ablations
+written post-hoc to defend the main result. They are pre-registered
+tests of the specific causal story we are making: that gate site
+matters in the order Qwen predicts (v02), that elementwise granularity
+matters but perhaps not as much as assumed (v03), that the
+multiplicative form beats the additive (v04), that both metadata axes
+contribute (v05, v06), that typology generalises where L1 ID does not
+(v07), that the same mechanism helps cloze (v08), and that the
+backbone does not need to move for the gate to do its job (v09). Each
+variant has a stand-alone \texttt{.md} that specifies its expected
+outcome \emph{before the experiment is run}; the flagship run either
+produces results consistent with that causal map or forces us to
+revise it.

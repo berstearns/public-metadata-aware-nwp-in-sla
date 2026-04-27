@@ -1,0 +1,24 @@
+\begin{abstract}
+Language models trained on second-language (L2) learner corpora develop
+structured, acquisition-aligned error profiles rather than uniform
+degradation of a native-English baseline. This suggests the models
+internalise coarse interlanguage regularities, but it offers no explicit
+control: at inference, the model cannot be asked to predict as an A1
+Spanish-L1 learner rather than a C1 Japanese-L1 learner. We propose a
+light architectural modification that adds such control by conditioning
+the attention gate on learner metadata. Building on the Qwen team's
+finding that a head-specific sigmoid gate applied at the scaled
+dot-product attention output (\emph{SDPA-output gating}) is the most
+effective single change to softmax attention, we extend the gate's input
+from the hidden state alone to the concatenation of the hidden state
+with learned CEFR-proficiency and L1 embeddings. This yields a
+per-learner, per-token filter on attention outputs at every layer,
+activated only when the learner profile changes. We describe a pilot
+design on EFCAMDAT with zero-shot transfer to three external learner
+corpora (andrew100k, CELVA-SP, KUPA-KEYS), and enumerate a set of
+complementary experimental variants that ablate the gate site, the gate
+granularity, the activation form, and the metadata encoding. We argue
+this combination --- Qwen-optimal attention gating paired with
+learner-metadata conditioning --- is a minimal-change, interpretable
+handle on \emph{predict-the-missing-word} tasks in SLA.
+\end{abstract}

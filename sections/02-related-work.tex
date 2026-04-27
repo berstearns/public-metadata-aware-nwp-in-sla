@@ -1,0 +1,84 @@
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Gating in Attention}
+
+Gating has a long history in sequence modelling: LSTMs
+\citep{hochreiter1997long} and GRUs \citep{dey2017gru} use gates to
+control information flow across time steps; Highway Networks
+\citep{srivastava2015highway} extend the idea to feed-forward depth;
+and SwiGLU \citep{shazeer2020glu} introduced gating into Transformer
+feed-forward blocks where it is now standard. Recent work places gates
+inside the token mixer itself: gated linear attention
+\citep{hua2022transformer}, Retentive Networks \citep{sun2023retentive},
+Forgetting Transformer \citep{lin2025forgetting}, Gated Delta Networks
+\citep{yang2024gated}, and Native Sparse Attention \citep{yuan2025nsa}
+all integrate gating into attention variants. Switch Heads
+\citep{csordas2024switchhead} uses sigmoid gating to select among a
+mixture of attention-head experts. These works establish that gating
+helps, but until recently, the specific contribution of the gate ---
+against the broader architectural changes it was bundled with --- was
+rarely isolated.
+
+The Qwen team's study \citep{qiu2025gated} is the first to
+systematically ablate gate position, granularity, head sharing,
+activation, and mode within standard softmax attention. Their central
+finding is that a head-specific elementwise sigmoid gate applied at the
+SDPA output (their $G_1$ position) consistently beats every other
+configuration and every parameter-matched non-gated baseline, across
+both 15B MoE and 1.7B dense models trained on up to 3.5T tokens. They
+attribute the gain to non-linearity between the value and output
+projections (Eq. 7 in their paper) and input-dependent sparsity that
+suppresses the \emph{attention-sink} phenomenon
+\citep{xiao2023efficient,sun2024massive}. Our work adopts Qwen's best
+gating configuration verbatim and asks whether extending the gate's
+input with learner metadata preserves the gain and adds a new handle.
+
+\subsection{Learner Language Models and Artificial Learners}
+
+Interlanguage is the structured, rule-governed variety a second-language
+learner produces at a given developmental stage \citep{selinker1972interlanguage}.
+Its errors are not random; they follow predictable orders of acquisition
+\citep{goldschneider2001explaining} and reflect L1 transfer effects
+\citep{ionin2004article}. Artificial learners --- language models
+trained or prompted to approximate L2 behaviour --- have been explored
+for automatic item generation \citep{benedetto2024llmsimulation},
+difficulty calibration, and proficiency classification
+\citep{stearns2026al-cefr}. The companion CMCL submission
+\citep{stearns2026artificial} shows that continued pre-training of
+GPT-2 on EFCAMDAT is sufficient to reproduce, at aggregate, the SLA-predicted
+error distribution (jump in M:VERB:FORM, R:VERB:SVA, U:DET) without any
+explicit cognitive architecture. What that work does not provide is
+per-profile control: the model has learned the EFCAMDAT-average
+learner, not a parameterised family of learners. Our proposal fills
+that gap.
+
+A parallel line of work on perplexity-as-diagnostic
+\citep{stearns2025nwpaleval} treats token-level surprisal as a window
+into where a learner's prediction fails --- a framing that our gated
+model operationalises directly, since the gate selects, per position and
+per head, which contextual information is allowed to influence the
+prediction.
+
+\subsection{Metadata-Aware Language Modelling}
+
+Conditioning LMs on control codes is well established. CTRL
+\citep{keskar2019ctrl} prepends learned control tokens; FiLM
+\citep{perez2018film} modulates feature maps with learned affine
+transforms from conditioning variables; LoRA \citep{hu2022lora} attaches
+low-rank adapters that can be activated per task or user. For learner
+modelling specifically, a sibling line of work \citep{stearns2026metadata-aware}
+compares seven metadata-infusion strategies (L1 embedding, L1 typology,
+CEFR, morphology, WALS/Grambank, per-L1 LoRA, auxiliary heads) across
+five injection sites (embedding, pre-attention, post-attention,
+post-FFN, pre-LM-head) and four modes (additive, gating, FiLM, concat).
+Our paper is the narrow-and-deep counterpart: we commit to gating mode
+$\times$ post-attention site --- the cell that Qwen's native-LM evidence
+says dominates --- and study it in depth.
+
+Distinct from CTRL-style prefix control, our gate does not sit in the
+token stream: it is a per-layer architectural module that takes
+metadata as a parallel input. This keeps the context budget untouched,
+lets the gate specialise per layer and head, and allows zero-shot
+inference on texts whose metadata is absent by filling with a learned
+\texttt{unk} embedding.

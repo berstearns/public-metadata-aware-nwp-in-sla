@@ -1,0 +1,104 @@
+\section{Experiments}
+\label{sec:experiments}
+
+\subsection{Data}
+\label{subsec:data}
+
+\paragraph{Training.}
+We use the EF-Cambridge Open Language Database
+\citep{geertzen2014efcamdat}, a large-scale corpus of learner English
+essays annotated with CEFR proficiency (A1--C2) and L1 metadata.
+Following the CMCL companion paper \citep{stearns2026artificial}, we
+work with the sentence-level release. The splits live at
+\texttt{norm-EFCAMDAT-train.csv} and \texttt{norm-EFCAMDAT-remainder.csv}
+(together, the training pool) and \texttt{norm-EFCAMDAT-test.csv} (the
+held-out set).
+
+\paragraph{Metadata availability.}
+EFCAMDAT exposes the learner's first language (\texttt{l1}) and CEFR
+level (\texttt{cefr\_level}) at row level. The three transfer corpora
+use the same two fields --- \texttt{l1} plus \texttt{cefr\_level}
+(\texttt{cefr\_label} for andrew100k). We keep only these two
+pieces of metadata as gate input; richer features (WALS/Grambank
+typology, morphological tags) are deferred to v07.
+
+The EFCAMDAT L1 inventory used for the gate embedding is the 10 L1s
+observed in the training split: Arabic, French, German, Italian,
+Japanese, Mandarin, Portuguese, Russian, Spanish, Turkish. Transfer
+rows with out-of-inventory L1 route to a learned \texttt{unk} slot.
+
+\paragraph{Zero-shot transfer.}
+We evaluate, without further training, on three external learner
+corpora released with the CEFR-classification splits used in our wider
+work:
+\begin{itemize}
+  \item \texttt{norm-andrew100k-remainder.csv} --- the Caines 100k
+    collection, with per-row CEFR and L1; the L1 inventory overlaps
+    strongly with EFCAMDAT (Portuguese, Mandarin, Russian, Spanish,
+    Arabic, German, Italian, French, Japanese, Turkish). This is the
+    closest same-target, different-register test.
+  \item \texttt{norm-CELVA-SP.csv} --- predominantly French-L1 learners
+    of English; French is in the EFCAMDAT L1 inventory, so the gate's
+    L1 embedding is reusable at test time.
+  \item \texttt{norm-KUPA-KEYS.csv} --- a mixed-L1 corpus whose
+    inventory (Polish, Portuguese, Spanish, Italian, Greek, Hungarian,
+    German, Dutch, Chinese, Bengali, Slovene) only partially overlaps
+    with EFCAMDAT. Several L1s (Polish, Greek, Hungarian, Dutch,
+    Bengali, Slovene) are out-of-inventory and route to \texttt{unk}.
+    This is the hardest test of L1 generalisation and the main
+    motivation for v07 (typological-feature gating).
+\end{itemize}
+
+\subsection{Models and baselines}
+\label{subsec:models}
+
+We compare four configurations at matched data exposure:
+\begin{description}
+  \item[B0. Native GPT-2 Base.] No further training; pure OpenAI
+    release \citep{radford2019gpt2}. The native baseline.
+  \item[B1. Learner GPT-2.] The CMCL companion's continually-pre-trained
+    GPT-2 on EFCAMDAT with no metadata signal
+    \citep{stearns2026artificial}. The data-only learner baseline.
+  \item[B2. Learner GPT-2 + metadata concat.] Same continual
+    pre-training as B1, but with CEFR and L1 tokens prepended to each
+    training sequence. The prompt-level metadata baseline.
+  \item[G1 (ours).] Learner GPT-2 with the metadata-aware SDPA-output
+    gate of Eq.~\eqref{eq:metadata-gate}. Head-specific, elementwise,
+    sigmoid, multiplicative, initialised to pass-through.
+\end{description}
+
+B0--B2 together isolate our two claims: that gating adds something
+beyond data (B1) and that an architectural gate beats naive metadata
+injection (B2). All models use GPT-2 Base with identical tokenisation
+and context length (1024). Continual pre-training uses the same
+hyperparameters as \citet{stearns2026artificial} --- AdamW, LR 5e-5 with
+cosine decay, batch size 16, 3 epochs over the EFCAMDAT pool --- so the
+only varying factor is the gate.
+
+\subsection{Metrics}
+\label{subsec:metrics}
+
+\paragraph{Stratified perplexity.}
+Primary metric. We report token-level perplexity on the EFCAMDAT
+held-out set, broken down by (CEFR, L1) cells. For transfer corpora we
+report PPL by CEFR bucket where labels exist and aggregate otherwise.
+This matches the reframing of perplexity as diagnostic pursued in
+\citet{stearns2025nwpaleval}.
+
+\paragraph{Cloze accuracy.}
+On a sample of held-out sentences, we mask single content words picked
+by POS (noun, verb, adjective, determiner) and score top-1 and top-5
+accuracy of predicting the masked word given bilateral context.
+Stratified again by (CEFR, L1).
+
+\subsection{Expected compute}
+\label{subsec:compute}
+
+B0 requires no training. B1 is the CMCL checkpoint (already trained).
+B2 and G1 require one continual-pre-training run each, estimated at
+~2 A100-days per run at GPT-2 Base scale. Inference across the three
+transfer corpora is negligible. Total budget for the flagship draft:
+~5 A100-days. The nine-variant ablation sweep
+(\texttt{experiments-ideas/v01--v09}) is an additional ~18 A100-days if
+every variant is trained from scratch, or ~6 A100-days if v05--v09 are
+trained only under the frozen-backbone regime of v09.
